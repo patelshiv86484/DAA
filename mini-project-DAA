@@ -1,1 +1,86 @@
-temp
+import heapq
+import networkx as nx
+import matplotlib.pyplot as plt
+import time
+
+# Dijkstra's algorithm for finding the shortest path from a source node
+def dijkstra(graph, start):
+    pq = [(0, start)]
+    distances = {node: float('infinity') for node in graph}
+    distances[start] = 0
+    previous_nodes = {node: None for node in graph}
+    
+    while pq:
+        current_distance, current_node = heapq.heappop(pq)
+        
+        if current_distance > distances[current_node]:
+            continue
+        
+        for neighbor, weight in graph[current_node].items():
+            distance = current_distance + weight
+            if distance < distances[neighbor]:
+                distances[neighbor] = distance
+                previous_nodes[neighbor] = current_node
+                heapq.heappush(pq, (distance, neighbor))
+    
+    return distances, previous_nodes
+
+def get_shortest_path(previous_nodes, target):
+    path = []
+    while target is not None:
+        path.append(target)
+        target = previous_nodes[target]
+    path.reverse()
+    return path
+
+# Function to visualize the graph and the shortest path between nodes
+def visualize_graph(graph, shortest_path=None, start=None, target=None):
+    G = nx.Graph()
+    
+    for node, neighbors in graph.items():
+        for neighbor, weight in neighbors.items():
+            G.add_edge(node, neighbor, weight=weight)
+    
+    pos = nx.spring_layout(G)
+    
+    plt.clf()  # Clear previous plot
+    nx.draw(G, pos, with_labels=True, node_color="lightblue", node_size=700, font_size=10, font_weight='bold')
+    
+    edge_labels = nx.get_edge_attributes(G, 'weight')
+    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
+    
+    if shortest_path:
+        path_edges = list(zip(shortest_path, shortest_path[1:]))
+        nx.draw_networkx_edges(G, pos, edgelist=path_edges, width=3, edge_color="r")
+    
+    if start:
+        nx.draw_networkx_nodes(G, pos, nodelist=[start], node_color="green", node_size=800)
+    if target:
+        nx.draw_networkx_nodes(G, pos, nodelist=[target], node_color="orange", node_size=800)
+    
+    plt.pause(1)  # Pause to simulate the dynamic process
+
+# Function to compute and display the shortest paths from all nodes to all other nodes
+def find_all_shortest_paths(graph):
+    for source_node in graph:
+        distances, previous_nodes = dijkstra(graph, source_node)
+        for target_node in graph:
+            if source_node != target_node:
+                shortest_path = get_shortest_path(previous_nodes, target_node)
+                print(f"Shortest path from {source_node} to {target_node}: {shortest_path}")
+                print(f"Distance: {distances[target_node]}")
+                
+                # Visualizingg the path dynamically
+                visualize_graph(graph, shortest_path=shortest_path, start=source_node, target=target_node)
+
+graph = {
+    'A': {'B': 2,   'C': 4},
+    'B': {'A' : 2, 'C': 2},
+    'C': {'A':  4,  'B': 2},
+    'D': { 'B': 3, 'C': 5},  
+    'E': {'A': 1, 'D': 4} ,
+}
+plt.ion() 
+find_all_shortest_paths(graph)
+plt.ioff()
+plt.show()
